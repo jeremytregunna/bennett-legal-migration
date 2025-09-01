@@ -6,6 +6,7 @@ A comprehensive migration system for transferring data from Filevine MSSQL datab
 
 - **Complete Data Migration**: Migrates all 719,562 records from 211 MSSQL tables to Supabase
 - **GCS Document Integration**: Links existing documents in Google Cloud Storage to database records
+- **Document Search API**: FastAPI service for indexing and searching documents using Turbopuffer
 - **Project Path Mapping**: Intelligent mapping of ProjectId to GCS folder paths with variant handling
 - **Batch Processing**: Configurable batch sizes for efficient data transfer
 - **Progress Tracking**: Real-time progress monitoring with detailed logging
@@ -72,6 +73,10 @@ GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
 MIGRATION_BATCH_SIZE=1000
 MIGRATION_MAX_CONCURRENT=5
 MIGRATION_DRY_RUN=false
+
+# Document Search API Configuration (Optional)
+TURBOPUFFER_API_KEY=your-turbopuffer-api-key
+TURBOPUFFER_REGION=gcp-us-central1
 ```
 
 ## Usage
@@ -114,6 +119,65 @@ Test any operation without making changes:
 MIGRATION_DRY_RUN=true uv run python -m src.migration.cli migrate
 ```
 
+## Document Search API
+
+The project includes a FastAPI service for indexing and searching documents in Google Cloud Storage.
+
+### Quick Start
+
+1. **Configure Turbopuffer** (get API key from https://turbopuffer.com):
+```bash
+# Add to .env file
+TURBOPUFFER_API_KEY=your-turbopuffer-api-key
+TURBOPUFFER_REGION=gcp-us-central1
+```
+
+2. **Start the Search API**:
+```bash
+python document_indexer_daemon.py --reload
+```
+
+3. **Index Documents**:
+```bash
+curl -X POST "http://localhost:8000/index" \
+  -H "Content-Type: application/json" \
+  -d '{"batch_size": 100}'
+```
+
+4. **Search Documents**:
+```bash
+curl -X POST "http://localhost:8000/search" \
+  -H "Content-Type: application/json" \
+  -d '{"filename": "contract.pdf", "limit": 10}'
+```
+
+### API Documentation
+
+- **Interactive Docs**: http://localhost:8000/docs
+- **API Reference**: See `API.md` for complete endpoint documentation
+- **Service Guide**: See `INDEXER_README.md` for detailed setup
+
+### Search Examples
+
+**Find PDFs:**
+```bash
+curl -X POST "http://localhost:8000/search" \
+  -H "Content-Type: application/json" \
+  -d '{"filename": ".pdf", "limit": 20}'
+```
+
+**Find documents by project:**
+```bash
+curl -X POST "http://localhost:8000/search" \
+  -H "Content-Type: application/json" \
+  -d '{"project_name": "Smith vs Jones", "limit": 15}'
+```
+
+**Get all documents for a project:**
+```bash
+curl "http://localhost:8000/search/project/12345?limit=50"
+```
+
 ## Architecture
 
 ### Core Components
@@ -121,6 +185,7 @@ MIGRATION_DRY_RUN=true uv run python -m src.migration.cli migrate
 - **ProjectGCSMapper**: Maps ProjectId to GCS folder paths with variant handling
 - **SupabaseMigrator**: Handles data transfer from MSSQL to Supabase
 - **DocumentURLUpdater**: Updates document records with GCS URLs
+- **DocumentIndexer**: FastAPI service for searching documents using Turbopuffer
 - **MigrationConfig**: Configuration management and validation
 
 ### Migration Phases
