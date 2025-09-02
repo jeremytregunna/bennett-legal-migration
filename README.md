@@ -81,47 +81,101 @@ TURBOPUFFER_REGION=gcp-us-central1
 
 ## Usage
 
-### Complete Migration
+This tool provides **three distinct migration workflows**:
 
-Run the entire migration process (recommended):
+### 1. Primary Data Migration (MSSQL → Supabase)
 
+**Complete Migration** (recommended):
 ```bash
 uv run python -m src.migration.cli migrate
 ```
 
-### Individual Migration Phases
-
-1. **Analyze Project-to-GCS Mapping**:
+**Individual Migration Phases**:
 ```bash
-uv run python -m src.migration.cli analyze
-```
+# Analyze Project-to-GCS mapping
+uv run python -m src.migration.cli analyze --export-csv
 
-2. **Data Migration Only**:
-```bash
+# Data migration only
 uv run python -m src.migration.cli data
-```
 
-3. **Specific Tables**:
-```bash
+# Specific tables
 uv run python -m src.migration.cli data --tables Project Doc Person
-```
 
-4. **Document URL Updates Only**:
-```bash
+# Document URL updates only  
 uv run python -m src.migration.cli urls
+
+# Create tables only
+uv run python -m src.migration.cli create-tables
+
+# Retry failed batches
+uv run python -m src.migration.cli retry --csv-file failures.csv
 ```
 
-### Dry Run Mode
+### 2. Schema Migration (Public → Target Org Schema)
 
-Test any operation without making changes:
+Migrate data from public schema to organization-specific schema:
 
 ```bash
-MIGRATION_DRY_RUN=true uv run python -m src.migration.cli migrate
+# Run schema migration
+uv run python -m src.migration.cli schema-migrate
+
+# Or use the convenience script
+./run_migration.sh
+
+# Dry run mode
+./run_migration.sh --dry-run
 ```
 
-## Document Search API
+### 3. Document Migration & Folder Structure
 
-The project includes a FastAPI service for indexing and searching documents in Google Cloud Storage.
+Migrate documents and create proper folder structures:
+
+```bash
+# Run document migration
+uv run python -m src.migration.cli migrate-documents
+
+# Or use the convenience script  
+./run_document_migration.sh
+
+# Dry run mode
+uv run python -m src.migration.cli migrate-documents --dry-run
+```
+
+### 4. Custom Fields & Notes Migration
+
+Migrate additional data like custom fields and notes:
+
+```bash
+# Migrate all extras (custom fields + notes)
+uv run python -m src.migration.cli migrate-extras
+
+# Custom fields only
+uv run python -m src.migration.cli migrate-extras --skip-notes
+
+# Notes only  
+uv run python -m src.migration.cli migrate-extras --skip-custom-fields
+
+# Dry run mode
+uv run python -m src.migration.cli migrate-extras --dry-run
+```
+
+### 5. Dry Run Mode
+
+Test any migration operation without making changes:
+
+```bash
+# Environment variable method
+MIGRATION_DRY_RUN=true uv run python -m src.migration.cli migrate
+
+# Command-line flag method (for newer commands)
+uv run python -m src.migration.cli schema-migrate --dry-run
+uv run python -m src.migration.cli migrate-documents --dry-run
+uv run python -m src.migration.cli migrate-extras --dry-run
+```
+
+## Document Search API (Independent Tool)
+
+The project includes a **standalone FastAPI service** for indexing and searching documents in Google Cloud Storage using Turbopuffer search engine. This tool is independent of the migration workflows above.
 
 ### Quick Start
 
